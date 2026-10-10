@@ -48,6 +48,22 @@ pip install -e .
 pytest
 ```
 
+## Run
+
+```
+python scripts/run_all.py     # download -> features -> models -> evaluation -> tests -> figures
+```
+
+Scripts `01`-`09` can also be run individually, in order. Each step reads the previous step's output.
+
+## Headline result
+
+We fail to reject H0. All models reach ~50.6-51.7% next-day accuracy (ROC-AUC ~0.50), below the
+always-up benchmark (52.5%). No accuracy improvement from RF, XGBoost or LSTM over the
+logistic baseline is significant after Holm correction. The LSTM has the best backtest Sharpe
+(1.78 vs 1.31) but that is significant only against ARIMA. Full write-up: [paper/paper.md](paper/paper.md);
+tables in `results/tables/`, figures in `results/figures/`.
+
 ## Progress
 
-See the git history; each pipeline stage is one or more commits.
+Complete. Each pipeline stage is one commit in the git history.
