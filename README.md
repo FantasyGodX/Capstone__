@@ -56,6 +56,28 @@ python scripts/run_all.py     # download -> features -> models -> evaluation -> 
 
 Scripts `01`-`09` can also be run individually, in order. Each step reads the previous step's output.
 
+## Dashboard
+
+```
+streamlit run app/app.py
+```
+
+Opens at http://localhost:8501. Pages:
+
+| Page | What you can do |
+|---|---|
+| Overview | Headline metrics, verdict from the generated tests, cumulative-return chart |
+| Performance | Filter by model/ticker/year; ROC curves, rolling accuracy, confusion matrices, ticker heatmap |
+| Backtest | Transaction-cost slider, ticker/date selection, drawdowns, per-ticker results (re-runs the backtest live) |
+| Statistics | Significance tables with adjustable alpha, CI forest plots |
+| Robustness | Bull/bear, volatility regimes, by year, by ticker |
+| Compare | Any two models head to head with live DM, bootstrap and sign tests |
+| Data explorer | Candlestick prices with overlays, feature distributions, dataset table |
+| Analysis notes | Markdown editor with table/figure insertion; saves to `analysis/notes.md` |
+| Pipeline | Run any or all pipeline steps from the browser and see status |
+
+Run `pytest` to smoke-test every page headlessly (requires the pipeline results to exist).
+
 ## Headline result
 
 We fail to reject H0. All models reach ~50.6-51.7% next-day accuracy (ROC-AUC ~0.50), below the
