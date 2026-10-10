@@ -14,3 +14,4 @@ data/processed/*
 *.sqlite
 .env
 results/predictions/
+results/backtest/
