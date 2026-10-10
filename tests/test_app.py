@@ -6,17 +6,21 @@ import pytest
 pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
-APP = str(Path(__file__).resolve().parents[1] / "app" / "app.py")
-PAGES = ["overview"]
+ROOT = Path(__file__).resolve().parents[1]
+PAGES = ["overview", "performance", "backtest"]
+
+SCRIPT = """
+import sys
+sys.path.insert(0, r"{app}")
+import pages_{page}
+pages_{page}.render()
+"""
 
 
-def _results_exist():
-    return any((Path(APP).parents[1] / "results" / "predictions").glob("*.parquet"))
-
-
-@pytest.mark.skipif(not _results_exist(), reason="run the pipeline first")
+@pytest.mark.skipif(not any((ROOT / "results" / "predictions").glob("*.parquet")), reason="run the pipeline first")
 @pytest.mark.parametrize("page", PAGES)
 def test_page_renders(page):
-    at = AppTest.from_file(APP, default_timeout=60)
+    at = AppTest.from_string(SCRIPT.format(app=ROOT / "app", page=page), default_timeout=90)
     at.run()
     assert not at.exception, [e.value for e in at.exception]
+    assert len(at.markdown) + len(at.dataframe) > 0
