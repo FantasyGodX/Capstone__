@@ -1,0 +1,13 @@
+model,vol,n_days,accuracy,sharpe,mean_daily_ret
+AlwaysUp,high_vol,604,0.5261,1.1993,0.0015
+AlwaysUp,low_vol,652,0.5245,1.9503,0.0012
+Logistic,high_vol,604,0.5135,1.3776,0.0014
+Logistic,low_vol,652,0.5117,1.4438,0.0007
+ARIMA,high_vol,604,0.5174,1.1625,0.0011
+ARIMA,low_vol,652,0.4962,0.8832,0.0004
+RandomForest,high_vol,604,0.5151,1.2652,0.0014
+RandomForest,low_vol,652,0.5132,1.4069,0.0007
+XGBoost,high_vol,604,0.5141,1.3203,0.0013
+XGBoost,low_vol,652,0.5161,1.6267,0.0007
+LSTM,high_vol,604,0.5161,1.6196,0.0012
+LSTM,low_vol,652,0.5169,2.0513,0.0011
