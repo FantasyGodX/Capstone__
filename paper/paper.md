@@ -81,9 +81,9 @@ per-ticker-per-year accuracies.
 |---|---|---|---|---|---|
 | Always-up | 0.5253 | 0.5253 | 1.0000 | 0.6888 | 0.5000 |
 | Logistic | 0.5125 | 0.5288 | 0.6612 | 0.5876 | 0.5046 |
-| ARIMA | 0.5064 | 0.5231 | 0.6830 | 0.5924 | 0.4948 |
-| Random Forest | 0.5141 | 0.5277 | 0.7158 | 0.6075 | 0.5040 |
-| XGBoost | 0.5151 | 0.5326 | 0.6292 | 0.5769 | 0.5058 |
+| ARIMA | 0.5062 | 0.5229 | 0.6823 | 0.5921 | 0.4947 |
+| Random Forest | 0.5132 | 0.5270 | 0.7147 | 0.6067 | 0.5039 |
+| XGBoost | 0.5143 | 0.5320 | 0.6266 | 0.5754 | 0.5055 |
 | LSTM | 0.5165 | 0.5265 | 0.7893 | 0.6317 | 0.5020 |
 
 No model beats the always-up benchmark on accuracy, and all ROC-AUCs are within 0.006 of 0.5:
@@ -96,9 +96,9 @@ says "up".
 |---|---|---|---|---|---|
 | Buy & hold | 365% | 36.1% | 1.38 | -33.3% | 1.09 |
 | Logistic | 223% | 26.6% | 1.31 | -20.7% | 1.28 |
-| ARIMA | 135% | 18.7% | 1.01 | -23.3% | 0.80 |
-| Random Forest | 219% | 26.2% | 1.22 | -29.3% | 0.90 |
-| XGBoost | 219% | 26.2% | 1.31 | -25.8% | 1.02 |
+| ARIMA | 145% | 19.7% | 1.06 | -21.4% | 0.92 |
+| Random Forest | 217% | 26.0% | 1.21 | -29.4% | 0.88 |
+| XGBoost | 209% | 25.4% | 1.28 | -25.9% | 0.98 |
 | LSTM | 305% | 32.4% | 1.78 | -19.6% | 1.65 |
 
 ![Equity curves](../results/figures/equity_curves.png)
@@ -116,15 +116,15 @@ differences are challenger minus baseline; all p-values are one-sided and Holm-a
 
 | Challenger vs baseline | Acc. diff | DM p | Sharpe diff [95% CI] | Bootstrap Sharpe p |
 |---|---|---|---|---|
-| RF vs Logistic | +0.16 pp | 0.80 | -0.09 [-0.37, 0.26] | 0.97 |
-| XGBoost vs Logistic | +0.26 pp | 0.80 | 0.00 [-0.33, 0.39] | 0.97 |
+| RF vs Logistic | +0.07 pp | 0.80 | -0.10 [-0.38, 0.25] | 1.00 |
+| XGBoost vs Logistic | +0.18 pp | 0.80 | -0.03 [-0.36, 0.36] | 1.00 |
 | LSTM vs Logistic | +0.40 pp | 0.80 | 0.47 [-0.10, 0.97] | 0.22 |
-| RF vs ARIMA | +0.78 pp | 0.44 | 0.21 [-0.13, 0.61] | 0.40 |
-| XGBoost vs ARIMA | +0.88 pp | 0.44 | 0.30 [-0.07, 0.75] | 0.29 |
-| LSTM vs ARIMA | +1.02 pp | 0.36 | 0.77 [0.21, 1.27] | **0.007** |
+| RF vs ARIMA | +0.71 pp | 0.52 | 0.15 [-0.21, 0.60] | 0.68 |
+| XGBoost vs ARIMA | +0.82 pp | 0.52 | 0.22 [-0.18, 0.72] | 0.68 |
+| LSTM vs ARIMA | +1.04 pp | 0.34 | 0.72 [0.19, 1.21] | **0.019** |
 
 - No accuracy comparison is significant (DM, bootstrap or paired t-test) after Holm correction;
-  the smallest raw one-sided DM p-value is 0.060 (LSTM vs ARIMA).
+  the smallest raw one-sided DM p-value is 0.058 (LSTM vs ARIMA).
 - The only significant result is the LSTM's Sharpe advantage over ARIMA. Against logistic regression
   and against buy-and-hold (Sharpe difference +0.41, 95% CI [-0.11, 0.90], unadjusted p = 0.064) it
   is not significant.
@@ -157,6 +157,11 @@ explained by higher market exposure and a smoother drawdown profile, and with a 
 - **Survivorship / selection bias.** The tickers (NVDA, TSLA, AAPL, ...) are known long-run winners,
   which flatters any long-biased strategy and makes buy-and-hold hard to beat.
 - **Single seed, fixed hyperparameters** for stochastic models; no hyperparameter search.
+- **Sensitivity to data revisions.** Yahoo Finance adjusts historical prices retroactively. Re-downloading the
+  data and re-running the identical pipeline moved ARIMA's backtest cumulative return from 135% to 145% and
+  XGBoost's from 219% to 209%, while the logistic and LSTM results were essentially unchanged and no
+  conclusion changed. The models themselves are deterministic given the data (verified by refitting), so
+  this sensitivity comes from tiny input changes, which is itself a sign of how little signal there is.
 - **ARIMA** forecasts returns, not probabilities, so its ROC-AUC uses the forecast as the score.
 - DM tests use 0/1 loss (the only loss common to all models). Regime Sharpe ratios are computed on
   non-contiguous days. Zero risk-free rate, one cost level (0.05%), close-to-close execution and no
@@ -174,5 +179,6 @@ is significant, and the always-up benchmark beats every model on accuracy.
 ## Reproducibility
 
 `python scripts/run_all.py` regenerates every table and figure (seed 42, configuration in
-`config.yaml`). Yahoo Finance data can be revised slightly over time, so re-downloaded numbers may
-differ marginally from those reported here.
+`config.yaml`). Yahoo Finance data can be revised over time, so re-downloaded numbers may
+differ from those reported here (see Limitations); the tables in this paper correspond to the data
+downloaded on 2026-10-10.
