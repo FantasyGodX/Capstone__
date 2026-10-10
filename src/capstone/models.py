@@ -110,3 +110,86 @@ class XGBoostModel:
 
     def predict_score(self, X):
         return self.m.predict_proba(X)[:, 1]
+
+
+class LSTMModel:
+    """LSTM over a rolling window of the last `seq_len` days of standardised features.
+
+    - scaler fitted on the training window only
+    - chronological 15% tail of the training window used for early stopping
+    - the last seq_len-1 training rows are kept so the first test windows are complete
+      (past features only, no leakage)
+    """
+    threshold = 0.5
+
+    def __init__(self, seq_len: int = 20, hidden: int = 32, dropout: float = 0.3, lr: float = 1e-3,
+                 max_epochs: int = 40, patience: int = 5, batch_size: int = 64, seed: int = 42):
+        self.seq_len, self.hidden, self.dropout, self.lr = seq_len, hidden, dropout, lr
+        self.max_epochs, self.patience, self.batch_size, self.seed = max_epochs, patience, batch_size, seed
+
+    def _windows(self, Z: np.ndarray) -> np.ndarray:
+        L = self.seq_len
+        return np.stack([Z[i - L + 1: i + 1] for i in range(L - 1, len(Z))])
+
+    def _build(self, n_feat: int):
+        import torch.nn as nn
+
+        class Net(nn.Module):
+            def __init__(s, n_in, hidden, dropout):
+                super().__init__()
+                s.lstm = nn.LSTM(n_in, hidden, batch_first=True)
+                s.drop = nn.Dropout(dropout)
+                s.out = nn.Linear(hidden, 1)
+
+            def forward(s, x):
+                h, _ = s.lstm(x)
+                return s.out(s.drop(h[:, -1])).squeeze(-1)
+
+        return Net(n_feat, self.hidden, self.dropout)
+
+    def fit(self, X, y):
+        import torch
+        torch.manual_seed(self.seed)
+        np.random.seed(self.seed)
+        torch.set_num_threads(max(1, torch.get_num_threads()))
+        self.scaler = StandardScaler().fit(X)
+        Z = np.clip(self.scaler.transform(X), -5, 5).astype(np.float32)
+        self.tail = Z[-(self.seq_len - 1):]
+        W = torch.from_numpy(self._windows(Z))
+        t = torch.from_numpy(np.asarray(y)[self.seq_len - 1:].astype(np.float32))
+        n_val = int(0.15 * len(W))
+        Wtr, ttr, Wva, tva = W[:-n_val], t[:-n_val], W[-n_val:], t[-n_val:]
+
+        self.net = self._build(Z.shape[1])
+        opt = torch.optim.Adam(self.net.parameters(), lr=self.lr, weight_decay=1e-4)
+        loss_fn = torch.nn.BCEWithLogitsLoss()
+        best, best_state, bad = np.inf, None, 0
+        g = torch.Generator().manual_seed(self.seed)
+        for _ in range(self.max_epochs):
+            self.net.train()
+            perm = torch.randperm(len(Wtr), generator=g)  # shuffling windows inside the train set only
+            for i in range(0, len(perm), self.batch_size):
+                b = perm[i: i + self.batch_size]
+                opt.zero_grad()
+                loss_fn(self.net(Wtr[b]), ttr[b]).backward()
+                opt.step()
+            self.net.eval()
+            with torch.no_grad():
+                v = loss_fn(self.net(Wva), tva).item()
+            if v < best - 1e-4:
+                best, bad = v, 0
+                best_state = {k: p.clone() for k, p in self.net.state_dict().items()}
+            else:
+                bad += 1
+                if bad >= self.patience:
+                    break
+        self.net.load_state_dict(best_state)
+        return self
+
+    def predict_score(self, X):
+        import torch
+        Z = np.clip(self.scaler.transform(X), -5, 5).astype(np.float32)
+        W = torch.from_numpy(self._windows(np.vstack([self.tail, Z])))
+        self.net.eval()
+        with torch.no_grad():
+            return torch.sigmoid(self.net(W)).numpy()
