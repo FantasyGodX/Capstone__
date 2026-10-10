@@ -1,0 +1,6 @@
+model,sharpe_diff_vs_buy_hold,ci_low,ci_high,p_one_sided
+Logistic,-0.0673,-0.4221,0.2516,0.6547
+ARIMA,-0.3644,-0.7383,-0.0368,0.977
+RandomForest,-0.1557,-0.4693,0.1864,0.828
+XGBoost,-0.0649,-0.4596,0.3518,0.6325
+LSTM,0.4063,-0.1112,0.9033,0.064
