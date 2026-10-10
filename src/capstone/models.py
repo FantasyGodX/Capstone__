@@ -76,3 +76,37 @@ class ARIMAModel:
             applied = self.res.apply(ext, refit=False)
         pred = applied.predict(start=1, end=len(ext) - 1)  # position k+1 forecast made at row k
         return np.asarray(pred) / 100
+
+
+class RandomForestModel:
+    """Shallow, heavily-regularised forest (min_samples_leaf large) - financial data is very noisy."""
+    threshold = 0.5
+
+    def __init__(self, seed: int = 42):
+        from sklearn.ensemble import RandomForestClassifier
+        self.m = RandomForestClassifier(n_estimators=300, max_depth=5, min_samples_leaf=20,
+                                        max_features="sqrt", n_jobs=-1, random_state=seed)
+
+    def fit(self, X, y):
+        self.m.fit(X, y)
+        return self
+
+    def predict_score(self, X):
+        return self.m.predict_proba(X)[:, 1]
+
+
+class XGBoostModel:
+    threshold = 0.5
+
+    def __init__(self, seed: int = 42):
+        from xgboost import XGBClassifier
+        self.m = XGBClassifier(n_estimators=200, max_depth=3, learning_rate=0.03, subsample=0.8,
+                               colsample_bytree=0.8, min_child_weight=10, reg_lambda=5.0,
+                               eval_metric="logloss", random_state=seed, n_jobs=-1, verbosity=0)
+
+    def fit(self, X, y):
+        self.m.fit(X, y)
+        return self
+
+    def predict_score(self, X):
+        return self.m.predict_proba(X)[:, 1]
