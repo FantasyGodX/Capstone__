@@ -1,0 +1,12 @@
+[project]
+name = "capstone"
+version = "0.1.0"
+description = "ML vs classical time-series models for short-term stock return direction"
+requires-python = ">=3.10"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

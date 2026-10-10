@@ -1,0 +1,20 @@
+# Central experiment configuration. Every script reads from here.
+tickers: [AAPL, MSFT, NVDA, JPM, TSLA, XOM, JNJ, WMT]   # 8 liquid, multi-sector US equities
+market_ticker: SPY          # S&P 500 ETF for market-context features
+vix_ticker: "^VIX"          # volatility proxy
+start_date: "2014-01-01"    # extra year of warm-up for 50-day indicators; modelling starts 2015
+end_date: "2024-12-31"
+seed: 42
+
+walk_forward:
+  first_test_year: 2020     # train 2015-2019 -> test 2020, then roll
+  last_test_year: 2024
+  train_years: 5            # rolling window (2016-2020 -> 2021, ...)
+
+backtest:
+  transaction_cost: 0.0005  # 0.05% per unit of turnover
+  trading_days: 252
+
+stats:
+  bootstrap_iterations: 5000
+  alpha: 0.05
