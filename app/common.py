@@ -1,4 +1,5 @@
 """Shared loaders, model styling and Plotly theme for the dashboard."""
+import os
 import sys
 from pathlib import Path
 
@@ -21,6 +22,11 @@ DASH = {"AlwaysUp": "solid", "Logistic": "solid", "ARIMA": "dash", "RandomForest
         "XGBoost": "dot", "LSTM": "solid"}
 INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e1e0d9", "#fcfcfb"
 TABLES = RESULTS / "tables"
+
+
+def notes_path() -> Path:
+    """Resolved on every call so the CAPSTONE_NOTES override (used by tests) always applies."""
+    return Path(os.environ.get("CAPSTONE_NOTES", ROOT / "analysis" / "notes.md"))
 
 
 def name(m: str) -> str:
