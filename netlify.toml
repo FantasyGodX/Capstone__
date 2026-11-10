@@ -1,0 +1,14 @@
+# Static site: no build step. site/ contains the HTML/JS and the pre-exported results in site/data.
+[build]
+  publish = "site"
+
+[[headers]]
+  for = "/data/*"
+  [headers.values]
+    Cache-Control = "public, max-age=3600"
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"

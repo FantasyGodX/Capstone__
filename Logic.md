@@ -17,7 +17,7 @@ Code excerpts are copied from the repository and trimmed. File paths are relativ
 7. [The backtest](#7-the-backtest)
 8. [Significance testing](#8-significance-testing)
 9. [Robustness (regimes)](#9-robustness-regimes)
-10. [The dashboard](#10-the-dashboard)
+10. [The website](#10-the-website)
 11. [How the tests protect the method](#11-how-the-tests-protect-the-method)
 12. [Decision log](#12-decision-log)
 13. [Known quirks and limitations](#13-known-quirks-and-limitations)
@@ -54,11 +54,11 @@ results/predictions/*.parquet      (one row per model, ticker, day: score, predi
      +--> 09_figures.py                                          -> static PNG charts
                                    |
                                    v
-                      app/ (Streamlit dashboard)  and  paper/paper.md
+                      10_export_site.py -> site/ (Netlify)  and  paper/paper.md
 ```
 
 The key design idea: **all models produce the same kind of output** (a score per day and a 0/1
-prediction), stored in one common table. Everything downstream (metrics, backtest, tests, dashboard)
+prediction), stored in one common table. Everything downstream (metrics, backtest, tests, website)
 works on that table and does not care which model made the predictions. That is why adding or removing a
 model changes almost nothing else.
 
@@ -476,7 +476,7 @@ port = wide.T.groupby(level="model").mean().T     # equal-weight, daily rebalanc
 | Decision | Why | Caveat |
 |---|---|---|
 | Long/cash only | Simplest realistic rule, matches the plan | No shorting means models can only profit from up-calls |
-| 0.05% cost | The plan's example value | Real costs vary; the dashboard lets you change it |
+| 0.05% cost | The plan's example value | Real costs vary; the website lets you change it |
 | Execution at the close that produced the signal | Standard simplification | Assumes you can trade at the close price with no slippage, which is optimistic |
 | Risk-free rate = 0 | Keeps Sharpe simple | Slightly flatters all strategies equally |
 | Buy-and-hold (AlwaysUp) shown alongside | It is the honest benchmark | Strongly bullish sample (NVDA, TSLA, AAPL) makes it hard to beat |
@@ -565,7 +565,7 @@ running = max(running, min(1.0, (m - i) * pvals[k]))    # i-th smallest p-value 
 ```
 
 It is applied separately to each family of six p-values (DM, bootstrap accuracy, t-test, bootstrap Sharpe).
-**Decisions should use the `_holm` columns.** The dashboard's Statistics page shows both raw and adjusted values.
+**Decisions should use the `_holm` columns.** The website's Statistics page shows both raw and adjusted values.
 
 ### 8.5 Sharpe versus buy-and-hold
 
@@ -609,55 +609,69 @@ Caveats:
 
 ---
 
-## 10. The dashboard
+## 10. The website
 
-**Folder:** `app/`
+**Folder:** `site/`
 
-Built with Streamlit (Python web apps) and Plotly (interactive charts). It is a view over the same code and
-tables the pipeline produces; it contains no separate modelling logic.
+A static website (plain HTML, CSS and JavaScript, with Plotly for charts) hosted on Netlify. It contains no
+Python and no server. Step 10 of the pipeline exports the results to JSON, and the browser does the rest.
 
 ### Structure
 
 ```
-app/app.py              registers the pages with st.navigation
-app/common.py           loaders, model colours, chart theme, path helpers
-app/pages_<name>.py     each defines render(), the function that draws the page
-```
-
-`app.py` adds `app/` to the import path and lists the pages:
-
-```python
-st.Page(pages_overview.render, title="Overview", icon="🏠", url_path="overview", default=True)
+site/index.html         page shell: navigation, theme toggle
+site/js/app.js          hash router (#/overview, #/backtest, ...) and theme switch
+site/js/stats.js        the maths: metrics, ROC, backtest, Diebold-Mariano, bootstrap, sign test
+site/js/data.js         loads the JSON and builds fast lookup arrays; model names and colours
+site/js/ui.js           small helpers for tables, controls, tabs and Plotly charts
+site/js/pages/*.js      one module per page; each returns the page's HTML element
+site/data/*.json        written by scripts/10_export_site.py
+site/vendor/            Plotly and marked, stored in the repo so no CDN is needed
+netlify.toml            tells Netlify to publish the site/ folder, with no build step
 ```
 
 ### Key mechanisms
 
 | Mechanism | How it works |
 |---|---|
-| **Shared code** | `common.py` puts `src/` on `sys.path`, so pages call `capstone.backtest`, `capstone.stats`, etc. directly. The Backtest page's cost slider really re-runs `backtest_all`, and the Compare page really runs the same DM and bootstrap functions as the pipeline |
-| **Caching** | Loaders and the backtest runner use `@st.cache_data`, so changing a filter does not reload files or recompute everything. The Pipeline page calls `st.cache_data.clear()` after a run |
-| **Consistent colours** | `COLOR` and `DASH` in `common.py` fix one colour and line style per model, so a model never changes colour between charts. Dash styles are a second cue for colour-blind readers |
-| **Pipeline page** | Starts each script with `subprocess.Popen([sys.executable, "-u", script])` and streams its output into the page |
-| **Notes page** | Keeps the text in `st.session_state`; the Save button writes `analysis/notes.md`. The path comes from the function `notes_path()`, evaluated on every call so tests can redirect it with an environment variable |
-| **Missing results** | `require_results()` shows a friendly message instead of crashing when the pipeline has not been run |
+| **Export step** | `scripts/10_export_site.py` writes the predictions (one compact table: ticker x date x model score and prediction), all results tables, prices, the feature dataset and this document as JSON. It checks that every model covers exactly the same ticker-date grid, which lets the browser index predictions by position |
+| **Live recomputation** | `stats.js` re-implements the Python functions. The Backtest page's cost slider really recomputes every strategy return in the browser, and the Compare page runs Diebold-Mariano, a block bootstrap and an exact sign test. The JavaScript was checked against the Python outputs: accuracy, ROC-AUC, F1, backtest return, Sharpe, drawdown and Calmar match the saved tables, and the DM statistic matches to four decimals |
+| **Bootstrap randomness** | The browser bootstrap uses a fixed seed, so it is reproducible, but its random draws differ from NumPy's, so its p-values differ slightly from the saved tables |
+| **Consistent colours** | `COLOR` and `DASH` in `data.js` fix one colour and line style per model, so a model never changes colour between charts. Dash styles are a second cue for colour-blind readers |
+| **Dark and light theme** | Colours are CSS variables switched by a `data-theme` attribute. Charts read the current theme colours when they are drawn, so the page re-renders when the theme changes |
+| **Lazy loading** | The large price and feature files load only when the Data explorer page is opened |
+| **No state on the server** | A static site cannot run the pipeline or save files, so the old pipeline runner and notes editor do not exist. Run the pipeline from the command line, then re-export |
 
 ### Which page uses what
 
 | Page | Reads | Computes live |
 |---|---|---|
-| Overview | tables | none |
+| Overview | tables, predictions | cumulative return chart |
+| How it works | config values | none (written explanation) |
 | Performance | predictions | metrics, ROC curves, rolling accuracy, confusion matrix |
 | Backtest | predictions | the whole backtest (cost, tickers, dates) |
 | Statistics | significance tables | none |
 | Robustness | regime tables, predictions | by-year accuracy |
 | Compare | predictions | DM, bootstrap, sign test, backtest for two models |
-| Data explorer | prices database, dataset | moving averages, feature histograms |
+| Data explorer | prices, features | moving averages, Bollinger bands, feature histograms and correlations |
+| Full write-up | `logic.md` | none |
+
+### The Streamlit dashboard (local only)
+
+`app/` still holds the original Streamlit dashboard (`streamlit run app/app.py`). It reads the same results through the Python
+code directly and adds a Pipeline page and a Notes editor. It is not deployed anywhere; the website in `site/` is the public
+version, so changes to one are not reflected in the other.
+
+### Deploying
+
+Netlify publishes the `site/` folder as it is. To update the numbers: re-run the pipeline, run
+`python scripts/10_export_site.py`, commit `site/data/` and push.
 
 ---
 
 ## 11. How the tests protect the method
 
-28 tests in `tests/`. Each one guards a specific assumption, so a future change that breaks the method fails
+32 tests in `tests/`. Each one guards a specific assumption, so a future change that breaks the method fails
 loudly:
 
 | Test file | Protects against |
@@ -669,12 +683,9 @@ loudly:
 | `test_backtest.py` | Wrong cost handling, Sharpe or drawdown arithmetic (checked against hand-calculated values) |
 | `test_stats.py` | Broken DM, bootstrap, t-test or Holm (checked on cases with known answers) |
 | `test_data.py` | Bad data slipping through, database round-trip errors |
-| `test_app.py` | Any dashboard page crashing; the main entry point; selecting models; the cost slider; saving notes |
+| `test_app.py` | Any Streamlit dashboard page crashing; the main entry point; selecting models; the cost slider; saving notes |
+| `test_site_export.py` | The website data drifting from the pipeline output (grid shape, predictions, scores, dates) |
 
-Writing the dashboard tests caught one real bug (saved CSV files lose their index name, which broke the Overview
-page). An invalid import in `app.py` was found by inspection, after which the entrypoint test was added so that
-`app.py` itself is exercised. One test originally wrote to the real notes file, which led to the notes path being
-resolved on every call.
 
 ---
 
@@ -703,7 +714,7 @@ resolved on every call.
 | 19 | One-sided tests + Holm | Two-sided, Bonferroni | Matches H1; Holm less conservative | Needs correct family definition |
 | 20 | Block bootstrap | Plain bootstrap | Returns are autocorrelated | Block length is a tuning choice |
 | 21 | Dropped SVM, GRU, GARCH | Include all | Depth over breadth in one semester | Fewer model families |
-| 22 | Streamlit dashboard reusing pipeline code | Separate web app | One source of truth; live recomputation | Local use, not a public website |
+| 22 | Static website (JSON export + JavaScript) | Streamlit app | Hostable on Netlify; no server; works offline once loaded | Maths re-implemented in JavaScript (checked against Python); cannot run the pipeline |
 
 ---
 
@@ -753,7 +764,7 @@ should know about them in case you are asked.
    preds = run_walk_forward(ds, {"RandomForest": ..., "MyModel": lambda: MyModel(seed)}, cfg)
    ```
 3. Add the name to `ORDER` in `scripts/06_evaluate.py`, and to `STYLE` in `scripts/09_figures.py`.
-4. Add it to `ORDER`, `COLOR`, `DASH` and `CLASS` in `app/common.py`.
+4. Add it to `ORDER` in `scripts/10_export_site.py` and to `COLOR`, `DASH` and `CLASS` in `site/js/data.js`.
 5. To include it in the significance tests, add it to `CHALLENGERS` or `BASELINES` in
    `scripts/07_stat_tests.py` (this changes the number of comparisons and so the Holm adjustment).
 6. Re-run the pipeline, then update the numbers in the paper by hand.

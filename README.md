@@ -10,8 +10,7 @@ trading costs?
 
 **Headline result:** we fail to reject H0. All models reach about 50.6-51.7% next-day accuracy
 (ROC-AUC about 0.50), below the always-up benchmark (52.5%). No accuracy improvement from Random
-Forest, XGBoost or LSTM over the logistic baseline is significant after Holm correction. The LSTM has
-the best backtest Sharpe ratio (1.78 vs 1.31 for logistic regression), but that difference is
+Forest, XGBoost or LSTM over the logistic baseline is significant after Holm correction. The LSTM has the best backtest Sharpe ratio (1.78 vs 1.31 for logistic regression), but that difference is
 significant only against ARIMA. Full write-up: [paper/paper.md](paper/paper.md).
 
 ---
@@ -22,7 +21,7 @@ significant only against ARIMA. Full write-up: [paper/paper.md](paper/paper.md).
 2. [Prerequisites](#2-prerequisites)
 3. [Installation](#3-installation)
 4. [Running the pipeline](#4-running-the-pipeline)
-5. [Using the dashboard](#5-using-the-dashboard)
+5. [The website and deploying to Netlify](#5-the-website-and-deploying-to-netlify)
 6. [Configuration](#6-configuration)
 7. [Tests](#7-tests)
 8. [Project layout](#8-project-layout)
@@ -45,8 +44,9 @@ python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
 pip install -e .
-python scripts/run_all.py          # generates all data, predictions, tables and figures
-streamlit run app/app.py           # opens the dashboard at http://localhost:8501
+python scripts/run_all.py          # generates all data, predictions, tables and figures, and exports site/data
+python -m http.server --directory site 8000   # the public website: http://localhost:8000
+streamlit run app/app.py                      # optional local Streamlit dashboard: http://localhost:8501
 ```
 
 macOS / Linux: identical, except activate with `source .venv/bin/activate`.
@@ -66,16 +66,16 @@ macOS / Linux: identical, except activate with `source .venv/bin/activate`.
 ```powershell
 python -m venv .venv                 # create an isolated environment
 .venv\Scripts\activate               # macOS/Linux: source .venv/bin/activate
-pip install -r requirements.txt      # pandas, scikit-learn, statsmodels, xgboost, torch, yfinance, streamlit, plotly, ...
-pip install -e .                     # makes the `capstone` package importable from scripts and the app
+pip install -r requirements.txt      # pandas, scikit-learn, statsmodels, xgboost, torch, yfinance, ...
+pip install -e .                     # makes the `capstone` package importable from the scripts
 ```
 
-Check the install with `pytest` (see [Tests](#7-tests)). Dashboard tests are skipped until the pipeline
-has produced results.
+Check the install with `pytest` (see [Tests](#7-tests)). The website in `site/` needs no Python packages at all (plain HTML and JavaScript); `streamlit` and `plotly` are only
+for the optional local dashboard.
 
 ## 4. Running the pipeline
 
-The pipeline is nine numbered scripts. Each reads the previous step's output and writes its own.
+The pipeline is ten numbered scripts. Each reads the previous step's output and writes its own.
 
 ### Option A: one command
 
@@ -83,7 +83,7 @@ The pipeline is nine numbered scripts. Each reads the previous step's output and
 python scripts/run_all.py
 ```
 
-Runs all nine steps in order and stops at the first failure. Total time is a few minutes on a laptop
+Runs all ten steps in order and stops at the first failure. Total time is a few minutes on a laptop
 CPU (data download and model fitting dominate).
 
 ### Option B: one step at a time
@@ -93,14 +93,10 @@ python scripts/01_download_data.py
 python scripts/02_build_features.py
 ...
 python scripts/09_figures.py
+python scripts/10_export_site.py
 ```
 
 You can re-run any single step; later steps then need re-running to pick up the change.
-
-### Option C: from the dashboard
-
-Open the **Pipeline** page, tick **Run all steps** (or choose individual steps) and press **Run**. Logs
-stream into the page and cached results are refreshed afterwards.
 
 ### What each step does
 
@@ -115,38 +111,57 @@ stream into the page and cached results are refreshed afterwards.
 | 7 | `07_stat_tests.py` | predictions, backtest | `results/tables/significance_vs_baselines.csv`, `sharpe_vs_buy_and_hold.csv` |
 | 8 | `08_robustness.py` | predictions, prices | `results/tables/regime_*.csv` |
 | 9 | `09_figures.py` | tables, backtest | `results/figures/*.png` |
+| 10 | `10_export_site.py` | predictions, tables, prices, dataset, `Logic.md` | `site/data/*.json` (what the website reads) |
 
 `data/`, `results/predictions/` and `results/backtest/` are git-ignored because they are regenerated.
-The tables and figures in `results/tables/` and `results/figures/` are committed.
+The tables and figures in `results/tables/` and `results/figures/` are committed, and so is `site/data/`
+(it is what Netlify serves).
 
-## 5. Using the dashboard
+## 5. The website and deploying to Netlify
+
+The interactive site lives in [site/](site/). It is **static HTML + JavaScript** (Plotly for charts), so it needs no
+Python server. Everything it shows is computed in the browser from JSON files exported by step 10.
+
+**Preview locally** (browsers block `fetch` on `file://`, so serve it over HTTP):
 
 ```powershell
-streamlit run app/app.py
+python -m http.server --directory site 8000     # open http://localhost:8000
 ```
 
-It opens at http://localhost:8501 (use `--server.port 8600` to change the port). The dashboard needs the
-pipeline results to exist; otherwise pages show a message pointing to the Pipeline page.
+**Deploy to Netlify.** The repo already contains [netlify.toml](netlify.toml) (publish directory `site`, no build
+command). In Netlify choose **Add new site, Import an existing project**, pick this GitHub repo, and accept the
+detected settings. Every push to `main` redeploys. Alternatively drag the `site/` folder onto Netlify Drop.
+
+**Updating the numbers.** After re-running the pipeline, run `python scripts/10_export_site.py`, then commit and
+push `site/data/`. The website never runs the pipeline itself.
 
 | Page | What you can do |
 |---|---|
 | **Overview** | Headline metrics, an automatic summary of the significance tests, and the cumulative-return chart |
+| **How it works** | Plain-English walkthrough of the whole project: indicators, models, the LSTM, walk-forward testing, the backtest and the metrics |
 | **Performance** | Filter by model, ticker and test year. Metric table, ROC curves, rolling accuracy, confusion matrix, ticker x model heatmap |
 | **Backtest** | Transaction-cost slider (re-runs the backtest live), ticker and date selection, cumulative return, drawdown, per-ticker results, CSV download |
 | **Statistics** | Significance tables with an adjustable alpha, confidence-interval plots for accuracy and Sharpe differences, Sharpe vs buy-and-hold |
 | **Robustness** | Bull vs bear, high vs low volatility, results by year and by ticker |
 | **Compare** | Pick any two models for a head-to-head: accuracy difference, agreement, live Diebold-Mariano, bootstrap and sign tests, per-ticker and per-year differences |
 | **Data explorer** | Candlestick prices with moving-average and Bollinger overlays, feature distributions by next-day direction, feature correlations, dataset table |
-| **Analysis notes** | Markdown editor with live preview. Insert any results table or figure from the sidebar, then **Save** to `analysis/notes.md` or download the `.md` |
-| **Pipeline** | Status of each step (done/missing, last updated) and buttons to run steps |
+| **Full write-up** | The long-form project explanation ([Logic.md](Logic.md)) rendered as a page |
 
-Notes on the dashboard:
+Use the sun/moon button in the top bar to switch between dark and light mode (the choice is remembered).
+
+Notes on the website:
 
 - The Compare page's tests are single, unadjusted tests. If you look at many pairs, correct for multiple
   comparisons (the Statistics page applies Holm correction).
-- `analysis/notes.md` does not exist until you press Save. Commit it with git to keep your notes in the repo.
+- Bootstrap tests on the Compare page run in your browser with a fixed seed. They are reproducible but use
+  different random draws from the Python pipeline, so p-values differ slightly from the saved tables.
 - Changing the transaction cost or tickers on the Backtest page only affects that page; it does not rewrite
   the saved tables.
+- **Two front ends.** `site/` is the public, static website (what Netlify hosts). `app/` is the original Streamlit
+  dashboard, kept for local use: it adds the Pipeline page (run steps from the browser) and the Analysis notes
+  editor, which a static site cannot offer. Start it with `streamlit run app/app.py` (opens at http://localhost:8501;
+  `--server.port 8600` changes the port). Netlify never runs it. Changes to `app/` are not visible on the website,
+  and vice versa.
 
 ## 6. Configuration
 
@@ -175,15 +190,17 @@ advance and not tuned on test years.
 pytest
 ```
 
-28 tests, about 10 seconds. They cover:
+32 tests, about 30 seconds. They cover:
 
 - Data validation and the SQLite round trip.
 - **Look-ahead leakage:** perturbing future prices must not change any earlier feature or regime label.
 - Walk-forward folds are chronological and purged; ARIMA forecasts use only past returns.
 - Backtest arithmetic, statistical tests (Diebold-Mariano, bootstrap, paired t, Holm) against known values.
-- Every dashboard page renders headlessly, plus interaction tests (changing models, the cost slider, saving notes).
+- The website data export (`site/data`) is a complete ticker x date grid whose predictions match the pipeline output.
 
-The dashboard tests are skipped automatically if `results/predictions/` is empty.
+- Every Streamlit dashboard page renders headlessly, plus interaction tests (changing models, the cost slider, saving notes).
+
+The dashboard and export tests are skipped automatically if `results/predictions/` is empty.
 
 ## 8. Project layout
 
@@ -199,13 +216,20 @@ src/capstone/        pipeline logic
   backtest.py        long/cash backtest with transaction costs
   stats.py           Diebold-Mariano, block bootstrap, paired t-test, Holm
   robustness.py      bull/bear and volatility regimes
-scripts/             numbered entry points (01-09) and run_all.py
-app/                 Streamlit dashboard (app.py + one file per page)
+scripts/             numbered entry points (01-10) and run_all.py
+app/                 optional local Streamlit dashboard (app.py + one file per page)
+site/                static website deployed to Netlify
+  index.html         page shell (navigation, theme toggle)
+  js/                router, stats maths, data loading, one module per page (js/pages/)
+  css/style.css      dark/light theme and layout
+  vendor/            Plotly and marked, self-hosted (no CDN needed)
+  data/              JSON exported by step 10 (committed)
+netlify.toml         Netlify settings (publish directory: site)
 tests/               pytest suite
 data/                raw and processed data (git-ignored)
 results/             predictions (ignored), tables and figures (committed)
 paper/paper.md       the write-up
-analysis/notes.md    your notes from the dashboard (created on first Save)
+Logic.md             long-form explanation of every part of the project
 ```
 
 ## 9. How the method works
@@ -250,13 +274,13 @@ analysis/notes.md    your notes from the dashboard (created on first Save)
 | PowerShell: "running scripts is disabled" when activating the venv | `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then activate again |
 | `ModuleNotFoundError: capstone` | Activate the venv and run `pip install -e .` from the project root |
 | `ModuleNotFoundError` for another package | You are probably using the system Python; activate `.venv` first |
-| Dashboard says "No results found yet" | Run the pipeline (`python scripts/run_all.py` or the Pipeline page) |
+| Website shows "Could not load this page" | Serve it over HTTP (`python -m http.server --directory site 8000`); opening `index.html` directly does not work |
+| Website shows old numbers after a re-run | Run `python scripts/10_export_site.py`, commit `site/data/`, push (and hard-refresh the browser) |
 | Step 1 fails or returns no data | Check your internet connection. Yahoo may rate-limit; wait a minute and retry |
 | `pip install torch` fails | Your Python version may be too new or old for the available wheels; use Python 3.10-3.13 or see pytorch.org for install instructions |
-| Port 8501 already in use | `streamlit run app/app.py --server.port 8600` |
-| Streamlit asks for an email on first run | Press Enter to skip, or start with `--server.headless true` |
-| Dashboard shows old numbers after a re-run | Press `C` in the app, choose "Clear cache", or restart it |
-| Dashboard tests are skipped | No results yet; run the pipeline first |
+| Streamlit port 8501 already in use | `streamlit run app/app.py --server.port 8600` |
+| Port 8000 already in use | Use another port: `python -m http.server --directory site 8600` |
+| Export test is skipped | No results yet; run the pipeline first |
 
 ## 12. Scope and limitations
 
@@ -277,15 +301,16 @@ Main limitations (full list in the paper):
 
 ## 13. Typical workflows
 
-**Just look at the results.** Install, run `python scripts/run_all.py`, then `streamlit run app/app.py`. Read the
-write-up in [paper/paper.md](paper/paper.md).
+**Just look at the results.** Open the deployed Netlify site, or run `python -m http.server --directory site 8000` and
+visit http://localhost:8000 (no install needed). Read the write-up in [paper/paper.md](paper/paper.md).
 
-**Write your analysis.** Open **Analysis notes**, insert tables and figures from the sidebar, write your text, press
-Save, then `git add analysis/notes.md && git commit && git push`.
+**Publish an update.** Re-run the pipeline, run `python scripts/10_export_site.py`, then `git add site/data` and
+commit and push. Netlify redeploys automatically.
 
 **Test a different question.** Change the tickers, dates or cost in `config.yaml`, re-run the pipeline, then compare
-results in the dashboard. Remember to update the paper's numbers.
+results on the website. Remember to update the paper's numbers.
 
 **Try another model.** Add a class with `fit(X, y)`, `predict_score(X)` and a `threshold` attribute to
-`src/capstone/models.py`, register it in one of the `scripts/0[3-5]_*.py` files, and add it to the `ORDER`, `COLOR`
-and `DASH` lists in `app/common.py` and `scripts/06_evaluate.py` / `09_figures.py` so it shows up in tables and charts.
+`src/capstone/models.py`, register it in one of the `scripts/0[3-5]_*.py` files, and add it to `ORDER` in
+`scripts/10_export_site.py` and to the `CLASS`, `COLOR` and `DASH` maps in `site/js/data.js` (plus
+`scripts/06_evaluate.py` / `09_figures.py`) so it shows up in tables and charts.
