@@ -32,7 +32,7 @@ def render():
     fig = go.Figure(go.Scatter(x=tt.values, y=[name(m) for m in tt.index], mode="markers",
                                marker=dict(size=14, color=[COLOR[m] for m in tt.index], line=dict(color="white", width=2)),
                                hovertemplate="%{y}: %{x:.4f}<extra></extra>"))
-    fig.add_vline(x=0.5, line_color="#52514e", line_width=1, annotation_text="0.5", annotation_position="top")
+    fig.add_vline(x=0.5, line_color="#8a8984", line_width=1, annotation_text="0.5", annotation_position="top")
     st.plotly_chart(style_fig(fig, f"{metric} by model", height=320).update_layout(hovermode="closest"), width="stretch")
 
     c1, c2 = st.columns(2)

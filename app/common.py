@@ -16,12 +16,41 @@ ORDER = ["AlwaysUp", "Logistic", "ARIMA", "RandomForest", "XGBoost", "LSTM"]
 LABEL = {"AlwaysUp": "Buy & hold"}
 CLASS = {"AlwaysUp": "Benchmark", "Logistic": "Classical", "ARIMA": "Classical",
          "RandomForest": "ML", "XGBoost": "ML", "LSTM": "Deep learning"}
-COLOR = {"AlwaysUp": "#898781", "Logistic": "#2a78d6", "ARIMA": "#eb6834",
-         "RandomForest": "#1baf7a", "XGBoost": "#e87ba4", "LSTM": "#6250d6"}
+COLOR = {"AlwaysUp": "#898781", "Logistic": "#4a95f0", "ARIMA": "#eb6834",
+         "RandomForest": "#1baf7a", "XGBoost": "#e87ba4", "LSTM": "#8b7bff"}
 DASH = {"AlwaysUp": "solid", "Logistic": "solid", "ARIMA": "dash", "RandomForest": "dashdot",
         "XGBoost": "dot", "LSTM": "solid"}
-INK, MUTED, GRID, SURFACE = "#0b0b0b", "#52514e", "#e1e0d9", "#fcfcfb"
+PALETTES = {
+    "dark": dict(ink="#ececea", muted="#a9a8a3", grid="#2e3138", hover="#1a1d24"),
+    "light": dict(ink="#0b0b0b", muted="#52514e", grid="#e1e0d9", hover="#ffffff"),
+}
+
+
+def palette() -> dict:
+    """Plot colors for the theme currently selected in Streamlit's Settings menu."""
+    try:
+        kind = st.context.theme.type
+    except Exception:
+        kind = "dark"
+    return PALETTES.get(kind, PALETTES["dark"])
+
+
 TABLES = RESULTS / "tables"
+
+
+GLOBAL_CSS = """
+<style>
+.block-container {padding-top: 2rem; padding-bottom: 3rem; max-width: 1400px;}
+h1 {font-size: 2rem !important; letter-spacing: -0.02em; margin-bottom: 0.2rem;}
+h2, h3 {letter-spacing: -0.01em;}
+[data-testid="stMetricLabel"] p {font-size: 0.85rem;}
+hr {margin: 1.2rem 0;}
+</style>
+"""
+
+
+def inject_css():
+    st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
 
 def notes_path() -> Path:
@@ -74,15 +103,17 @@ def table(fname: str) -> pd.DataFrame:
 
 
 def style_fig(fig: go.Figure, title: str | None = None, height: int = 430, yfmt: str | None = None) -> go.Figure:
+    pal = palette()
     fig.update_layout(
-        title=dict(text=title, x=0, font=dict(size=15, color=INK)) if title else None,
-        height=height, paper_bgcolor=SURFACE, plot_bgcolor=SURFACE, font=dict(color=MUTED, size=12),
+        title=dict(text=title, x=0, font=dict(size=15, color=pal["ink"])) if title else None,
+        height=height, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color=pal["muted"], size=12),
         margin=dict(l=10, r=10, t=50 if title else 20, b=10), hovermode="x unified",
-        legend=dict(orientation="h", y=-0.15, x=0, font=dict(color=INK)),
-        hoverlabel=dict(bgcolor="white", font_color=INK),
+        legend=dict(orientation="h", y=-0.15, x=0, font=dict(color=pal["ink"])),
+        hoverlabel=dict(bgcolor=pal["hover"], font_color=pal["ink"]),
     )
-    fig.update_xaxes(gridcolor=GRID, linecolor=GRID, zeroline=False)
-    fig.update_yaxes(gridcolor=GRID, linecolor=GRID, zerolinecolor=MUTED, tickformat=yfmt)
+    fig.update_xaxes(gridcolor=pal["grid"], linecolor=pal["grid"], zeroline=False)
+    fig.update_yaxes(gridcolor=pal["grid"], linecolor=pal["grid"], zerolinecolor=pal["muted"], tickformat=yfmt)
     return fig
 
 

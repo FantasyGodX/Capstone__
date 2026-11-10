@@ -13,7 +13,7 @@ def _forest(df, what: str, title: str):
         fig.add_trace(go.Scatter(x=[r[f"{what}_diff"]], y=[label], mode="markers", showlegend=False,
                                  marker=dict(size=12, color=COLOR[r.challenger], line=dict(color="white", width=2)),
                                  hovertemplate=f"{label}<br>diff %{{x:.4f}}<br>95% CI [{r[f'{what}_ci_low']:.4f}, {r[f'{what}_ci_high']:.4f}]<extra></extra>"))
-    fig.add_vline(x=0, line_color="#52514e", line_width=1)
+    fig.add_vline(x=0, line_color="#8a8984", line_width=1)
     return style_fig(fig, title, height=380).update_layout(hovermode="closest")
 
 
@@ -37,7 +37,7 @@ def render():
     view["accuracy verdict (DM, Holm)"] = view["DM_p_holm"].map(verdict)
     view["Sharpe verdict (Holm)"] = view["boot_sharpe_p_holm"].map(verdict)
     st.dataframe(view.style.format({c: "{:.4f}" for c in view.columns if view[c].dtype == float})
-                 .map(lambda v: "background-color:#cfe9d9" if v == "significant" else "", subset=["accuracy verdict (DM, Holm)", "Sharpe verdict (Holm)"]),
+                 .map(lambda v: "background-color:rgba(46,160,90,0.35)" if v == "significant" else "", subset=["accuracy verdict (DM, Holm)", "Sharpe verdict (Holm)"]),
                  hide_index=True, width="stretch")
 
     c1, c2 = st.columns(2)

@@ -65,7 +65,7 @@ def render():
     with c1:
         cum = (dates["correct_a"] - dates["correct_b"]).cumsum()
         fig = go.Figure(go.Scatter(x=cum.index, y=cum, mode="lines", line=dict(color=COLOR[a], width=2), name=f"{name(a)} - {name(b)}"))
-        fig.add_hline(y=0, line_color="#52514e", line_width=1)
+        fig.add_hline(y=0, line_color="#8a8984", line_width=1)
         st.plotly_chart(style_fig(fig, "Cumulative extra correct calls per ticker-day (A - B)"), width="stretch")
     with c2:
         eq = (1 + port[[a, b]]).cumprod() - 1
@@ -77,7 +77,7 @@ def render():
         g = (j["correct_a"] - j["correct_b"]).groupby(j.index.get_level_values("ticker") if key == "ticker" else j["test_year"]).mean() * 100
         fig = go.Figure(go.Bar(x=g.index.astype(str), y=g.values, marker_color=[COLOR[a] if v >= 0 else COLOR[b] for v in g.values],
                                hovertemplate="%{x}: %{y:+.2f} pp<extra></extra>"))
-        fig.add_hline(y=0, line_color="#52514e", line_width=1)
+        fig.add_hline(y=0, line_color="#8a8984", line_width=1)
         col.plotly_chart(style_fig(fig, ttl, height=360).update_layout(hovermode="closest"), width="stretch")
     st.caption(f"Bars in {name(a)}'s colour: A ahead. In {name(b)}'s colour: B ahead.")
     st.markdown(f"**Discordant calls:** only {name(a)} right on {only_a:,} ticker-days, only {name(b)} right on {only_b:,}.")

@@ -7,7 +7,7 @@ pytest.importorskip("streamlit")
 from streamlit.testing.v1 import AppTest  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
-PAGES = ["overview", "performance", "backtest", "statistics", "robustness", "compare", "data", "notes", "pipeline"]
+PAGES = ["overview", "guide", "performance", "backtest", "statistics", "robustness", "compare", "data", "notes", "pipeline"]
 
 SCRIPT = """
 import sys

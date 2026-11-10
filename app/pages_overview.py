@@ -27,20 +27,25 @@ def render():
                 f"{len(sig)} Sharpe comparisons are significant at {cfg()['stats']['alpha']:.0%} after Holm correction "
                 f"(challenger vs each classical baseline).")
 
-    left, right = st.columns([1.1, 1])
+    # Same fixed height for both tables (header + 6 model rows) so they line up exactly.
+    table_h = 35 * (len(ORDER) + 1) + 3
+    left, right = st.columns(2, gap="large")
     with left:
-        st.subheader("Classification metrics")
+        st.subheader("Classification")
+        st.caption("Out-of-sample next-day direction metrics")
         t = m.rename_axis("model").reset_index()
         t.insert(1, "class", t["model"].map(CLASS))
         t["model"] = t["model"].map(name)
         st.dataframe(t.style.format({k: "{:.3f}" for k in ["accuracy", "precision", "recall", "f1", "roc_auc"]} | {"n": "{:,.0f}"}),
-                     hide_index=True, width="stretch")
+                     hide_index=True, width="stretch", height=table_h)
     with right:
-        st.subheader("Backtest (equal-weight, after costs)")
+        st.subheader("Backtest")
+        st.caption("Equal-weight portfolio, after costs")
         b = bt.rename_axis("model").reset_index()
         b["model"] = b["model"].map(name)
         st.dataframe(b.style.format({"cum_return": "{:.0%}", "ann_return": "{:.1%}", "sharpe": "{:.2f}",
-                                     "max_drawdown": "{:.1%}", "calmar": "{:.2f}"}), hide_index=True, width="stretch")
+                                     "max_drawdown": "{:.1%}", "calmar": "{:.2f}"}),
+                     hide_index=True, width="stretch", height=table_h)
 
     port = pd.read_parquet(TABLES.parent / "backtest" / "daily_returns_portfolio.parquet")
     fig = go.Figure([line_trace(port.index, (1 + port[k]).cumprod() - 1, k) for k in ORDER])

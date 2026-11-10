@@ -3,7 +3,7 @@ import streamlit as st
 from plotly.subplots import make_subplots
 
 from capstone.features import feature_columns
-from common import DATA_PROCESSED, DATA_RAW, INK, MUTED, dataset, prices, style_fig
+from common import DATA_PROCESSED, DATA_RAW, dataset, prices, style_fig
 
 
 def render():

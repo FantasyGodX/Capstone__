@@ -8,11 +8,12 @@ import streamlit as st
 
 st.set_page_config(page_title="Capstone: ML vs classical", page_icon="📈", layout="wide")
 
-import pages_backtest, pages_compare, pages_data, pages_notes, pages_overview  # noqa: E402,E401
+import pages_backtest, pages_compare, pages_data, pages_guide, pages_notes, pages_overview  # noqa: E402,E401
 import pages_performance, pages_pipeline, pages_robustness, pages_statistics  # noqa: E402,E401
 
 PAGES = [
     st.Page(pages_overview.render, title="Overview", icon="🏠", url_path="overview", default=True),
+    st.Page(pages_guide.render, title="How it works", icon="📖", url_path="how-it-works"),
     st.Page(pages_performance.render, title="Performance", icon="🎯", url_path="performance"),
     st.Page(pages_backtest.render, title="Backtest", icon="💰", url_path="backtest"),
     st.Page(pages_statistics.render, title="Statistics", icon="📐", url_path="statistics"),
@@ -23,4 +24,7 @@ PAGES = [
     st.Page(pages_pipeline.render, title="Pipeline", icon="⚙️", url_path="pipeline"),
 ]
 
+import common  # noqa: E402
+
+common.inject_css()
 st.navigation(PAGES).run()

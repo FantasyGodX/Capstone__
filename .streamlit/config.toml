@@ -1,0 +1,15 @@
+# Streamlit's built-in Settings menu (top-right ⋮ > Settings > Theme) switches between these.
+[theme]
+base = "dark"
+
+[theme.dark]
+primaryColor = "#4a95f0"
+backgroundColor = "#0e1117"
+secondaryBackgroundColor = "#1a1d24"
+textColor = "#ececea"
+
+[theme.light]
+primaryColor = "#2a78d6"
+backgroundColor = "#ffffff"
+secondaryBackgroundColor = "#f3f3ef"
+textColor = "#0b0b0b"
