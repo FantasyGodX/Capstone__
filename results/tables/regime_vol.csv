@@ -3,11 +3,11 @@ AlwaysUp,high_vol,604,0.5261,1.1993,0.0015
 AlwaysUp,low_vol,652,0.5245,1.9503,0.0012
 Logistic,high_vol,604,0.5135,1.3776,0.0014
 Logistic,low_vol,652,0.5117,1.4438,0.0007
-ARIMA,high_vol,604,0.5203,1.2472,0.0012
-ARIMA,low_vol,652,0.4962,0.8848,0.0004
-RandomForest,high_vol,604,0.5145,1.2567,0.0014
-RandomForest,low_vol,652,0.5128,1.3962,0.0007
-XGBoost,high_vol,604,0.5161,1.3807,0.0014
-XGBoost,low_vol,652,0.5125,1.4325,0.0006
+ARIMA,high_vol,604,0.5184,1.2576,0.0012
+ARIMA,low_vol,652,0.496,0.8817,0.0004
+RandomForest,high_vol,604,0.5149,1.2716,0.0014
+RandomForest,low_vol,652,0.5132,1.3946,0.0007
+XGBoost,high_vol,604,0.5143,1.3011,0.0013
+XGBoost,low_vol,652,0.5104,1.4117,0.0006
 LSTM,high_vol,604,0.5161,1.6196,0.0012
 LSTM,low_vol,652,0.5169,2.0513,0.0011

@@ -1,7 +1,7 @@
 vol,challenger,baseline,acc_diff,DM_stat,DM_p,DM_p_holm
-high_vol,RandomForest,Logistic,0.001,0.1453,0.4422,1.0
-high_vol,XGBoost,Logistic,0.0027,0.3244,0.3729,1.0
+high_vol,RandomForest,Logistic,0.0014,0.2025,0.4198,1.0
+high_vol,XGBoost,Logistic,0.0008,0.1014,0.4596,1.0
 high_vol,LSTM,Logistic,0.0027,0.2837,0.3884,1.0
-low_vol,RandomForest,Logistic,0.0012,0.1698,0.4326,1.0
-low_vol,XGBoost,Logistic,0.0008,0.1125,0.4552,1.0
+low_vol,RandomForest,Logistic,0.0015,0.2257,0.4108,1.0
+low_vol,XGBoost,Logistic,-0.0013,-0.1973,0.5782,1.0
 low_vol,LSTM,Logistic,0.0052,0.6013,0.2739,1.0
