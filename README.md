@@ -8,7 +8,7 @@ trading costs?
 - **H0:** no significant difference in predictive performance between classical and ML models.
 - **H1:** ML and/or deep-learning models significantly outperform the classical baseline.
 
-**Headline result:** we fail to reject H0. All models reach about 50.6-51.7% next-day accuracy
+**Headline result:** we fail to reject H0. All models reach about 50.7-51.6% next-day accuracy
 (ROC-AUC about 0.50), below the always-up benchmark (52.5%). No accuracy improvement from Random
 Forest, XGBoost or LSTM over the logistic baseline is significant after Holm correction. The LSTM has the best backtest Sharpe ratio (1.78 vs 1.31 for logistic regression), but that difference is
 significant only against ARIMA. Full write-up: [paper/paper.md](paper/paper.md).
@@ -75,7 +75,7 @@ for the optional local dashboard.
 
 ## 4. Running the pipeline
 
-The pipeline is ten numbered scripts. Each reads the previous step's output and writes its own.
+The pipeline is ten numbered scripts (`run_all.py`), plus three optional report scripts (11-13) described below. Each reads the previous step's output and writes its own.
 
 ### Option A: one command
 
@@ -112,6 +112,9 @@ You can re-run any single step; later steps then need re-running to pick up the 
 | 8 | `08_robustness.py` | predictions, prices | `results/tables/regime_*.csv` |
 | 9 | `09_figures.py` | tables, backtest | `results/figures/*.png` |
 | 10 | `10_export_site.py` | predictions, tables, prices, dataset, `Logic.md` | `site/data/*.json` (what the website reads) |
+| 11 | `11_report_figures.py` (optional) | results, dataset | `paper/figures/*.png` |
+| 12 | `12_build_paper.py` (optional) | results, figures | `paper/paper.md`, `paper.html`, `paper.pdf`, and a copy in `site/paper/` (shown on the website's Paper page) |
+| 13 | `13_build_poster.py` (optional) | results, figures | `poster/` (**private: git-ignored, never published**): `poster.pdf` (48 x 36 in), `poster.png`, `poster.html` |
 
 `data/`, `results/predictions/` and `results/backtest/` are git-ignored because they are regenerated.
 The tables and figures in `results/tables/` and `results/figures/` are committed, and so is `site/data/`
@@ -145,6 +148,7 @@ push `site/data/`. The website never runs the pipeline itself.
 | **Robustness** | Bull vs bear, high vs low volatility, results by year and by ticker |
 | **Compare** | Pick any two models for a head-to-head: accuracy difference, agreement, live Diebold-Mariano, bootstrap and sign tests, per-ticker and per-year differences |
 | **Data explorer** | Candlestick prices with moving-average and Bollinger overlays, feature distributions by next-day direction, feature correlations, dataset table |
+| **Paper** | The research paper rendered as a page, with a PDF download (rebuilt by `scripts/12_build_paper.py`) |
 | **Full write-up** | The long-form project explanation ([Logic.md](Logic.md)) rendered as a page |
 
 Use the sun/moon button in the top bar to switch between dark and light mode (the choice is remembered).
@@ -179,7 +183,9 @@ All experiment settings live in [config.yaml](config.yaml); every script reads i
 | `seed` | Random seed | 42 |
 
 After editing `config.yaml`, re-run the affected steps (a ticker or date change means re-running from step
-1 or 2). **The paper's numbers are typed in by hand**, so update `paper/paper.md` after any re-run.
+1 or 2). The paper and poster read their numbers from `results/` when built, so after any re-run just run
+`python scripts/11_report_figures.py`, `12_build_paper.py` and `13_build_poster.py` (the build stops with a message if a re-run
+contradicts a conclusion stated in the text, so you know to revise it).
 
 Model hyperparameters are set in [src/capstone/models.py](src/capstone/models.py). They were fixed in
 advance and not tuned on test years.
@@ -228,7 +234,8 @@ netlify.toml         Netlify settings (publish directory: site)
 tests/               pytest suite
 data/                raw and processed data (git-ignored)
 results/             predictions (ignored), tables and figures (committed)
-paper/paper.md       the write-up
+paper/               paper.md / paper.pdf (generated), figures/
+poster/              PRIVATE, git-ignored: poster.pdf (48 x 36 in), poster.png, poster.html
 Logic.md             long-form explanation of every part of the project
 ```
 
@@ -308,7 +315,7 @@ visit http://localhost:8000 (no install needed). Read the write-up in [paper/pap
 commit and push. Netlify redeploys automatically.
 
 **Test a different question.** Change the tickers, dates or cost in `config.yaml`, re-run the pipeline, then compare
-results on the website. Remember to update the paper's numbers.
+results on the website. Then rebuild the paper and poster (steps 11-13).
 
 **Try another model.** Add a class with `fit(X, y)`, `predict_score(X)` and a `threshold` attribute to
 `src/capstone/models.py`, register it in one of the `scripts/0[3-5]_*.py` files, and add it to `ORDER` in

@@ -767,7 +767,7 @@ should know about them in case you are asked.
 4. Add it to `ORDER` in `scripts/10_export_site.py` and to `COLOR`, `DASH` and `CLASS` in `site/js/data.js`.
 5. To include it in the significance tests, add it to `CHALLENGERS` or `BASELINES` in
    `scripts/07_stat_tests.py` (this changes the number of comparisons and so the Holm adjustment).
-6. Re-run the pipeline, then update the numbers in the paper by hand.
+6. Re-run the pipeline, then rebuild the paper and poster (`scripts/11_report_figures.py`, `12_build_paper.py`, `13_build_poster.py`).
 
 ### Change the experiment
 

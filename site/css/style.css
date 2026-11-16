@@ -118,3 +118,8 @@ td.txt, th.txt { text-align: left; }
 
 .grid > *, .content, .controls .ctl { min-width: 0; }
 @media (max-width: 600px) { .grid.c4, .grid.c5 { grid-template-columns: 1fr; } .ctl { min-width: 0; width: 100%; } h1 { font-size: 1.5rem; } }
+
+.prose.paper { max-width: 980px; }
+.prose.paper img { display: block; margin: 14px auto 4px; background: #fff; border-radius: 8px; padding: 6px; max-height: 520px; width: auto; }
+.prose.paper hr { border: 0; border-top: 1px solid var(--border); margin: 22px 0; }
+.prose td[align="right"], .prose th[align="right"] { text-align: right; }

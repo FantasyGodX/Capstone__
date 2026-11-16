@@ -11,6 +11,7 @@ const PAGES = [
   { id: "robustness", title: "Robustness", icon: "🧪", load: () => import("./pages/robustness.js") },
   { id: "compare", title: "Compare", icon: "⚖️", load: () => import("./pages/compare.js") },
   { id: "data", title: "Data explorer", icon: "🗂️", load: () => import("./pages/explorer.js") },
+  { id: "paper", title: "Paper", icon: "📄", load: () => import("./pages/paper.js") },
   { id: "write-up", title: "Full write-up", icon: "📝", load: () => import("./pages/logic.js") },
 ];
 
